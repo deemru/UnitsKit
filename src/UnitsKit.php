@@ -14,7 +14,7 @@ function h2b( $hex )
 {
     if( substr( $hex, 0, 2 ) === '0x' )
         $hex = substr( $hex, 2 );
-    if( $hex === '' )
+    if( $hex === '' || $hex === '0' )
         return '';
     if( strlen( $hex ) % 2 !== 0 )
         $hex = '0' . $hex;
@@ -126,7 +126,7 @@ class UnitsKit
         unset( $this->addressHex );
     }
 
-    private function fetcher( $method, $params = '', $verbose = true )
+    public function fetcher( $method, $params = '', $verbose = true )
     {
         $json = $this->rpc->fetch( '/', true, '{"jsonrpc":"2.0","method":"' . $method . '","params":[' . $params . '],"id":1}' );
         if( $json === false || false === ( $json = jd( $json ) ) || isset( $json['error'] ) )
@@ -143,9 +143,140 @@ class UnitsKit
         return $json['result'];
     }
 
-    public function height()
+    /**
+     * Ethereum JSON-RPC API methods implemented in this class:
+     *
+     * Chain State:
+     * - eth_blockNumber      => blockNumber()
+     * - eth_chainId          => getChainId()
+     * - eth_gasPrice         => getGasPrice()
+     * - eth_maxPriorityFeePerGas => maxPriorityFeePerGas()
+     * - eth_protocolVersion  => protocolVersion()
+     * - eth_syncing          => syncing()
+     *
+     * Account Information:
+     * - eth_getBalance       => getBalance()
+     * - eth_getCode          => getCode()
+     * - eth_getStorageAt     => getStorageAt()
+     * - eth_getTransactionCount => getTransactionCount()
+     *
+     * Block Information:
+     * - eth_getBlockByHash   => getBlockByHash()
+     * - eth_getBlockByNumber => getBlockByNumber()
+     * - eth_getBlockReceipts => getBlockReceipts()
+     * - eth_getBlockTransactionCountByHash => getBlockTransactionCountByHash()
+     * - eth_getBlockTransactionCountByNumber => getBlockTransactionCountByNumber()
+     *
+     * Transaction Operations:
+     * - eth_call             => call()
+     * - eth_estimateGas      => getEstimateGas()
+     * - eth_sendRawTransaction => sendRawTransaction
+     *
+     * Transaction Information:
+     * - eth_getTransactionByHash => getTransactionByHash()
+     * - eth_getTransactionReceipt => getTransactionReceipt()
+     * - eth_getLogs          => getLogs
+     */
+
+    public function blockNumber()
     {
         return hexdec( $this->fetcher( 'eth_blockNumber' ) );
+    }
+
+    public function getChainId()
+    {
+        return $this->fetcher( 'eth_chainId' );
+    }
+
+    public function getGasPrice()
+    {
+        return $this->fetcher( 'eth_gasPrice' );
+    }
+
+    public function maxPriorityFeePerGas()
+    {
+        return $this->fetcher( 'eth_maxPriorityFeePerGas' );
+    }
+
+    public function protocolVersion()
+    {
+        return $this->fetcher( 'eth_protocolVersion' );
+    }
+
+    public function syncing()
+    {
+        return $this->fetcher( 'eth_syncing' );
+    }
+
+    public function getBalance( $address = null )
+    {
+        if( !isset( $address ) )
+            $address = $this->getAddress();
+        return $this->fetcher( 'eth_getBalance', '"' . $address . '", "latest"' );
+    }
+
+    public function getCode( $address, $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getCode', '"' . $address . '","' . $blockNumber . '"' );
+    }
+
+    public function getStorageAt( $address, $position, $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getStorageAt', '"' . $address . '","' . $position . '","' . $blockNumber . '"' );
+    }
+
+    public function getTransactionCount( $address = null )
+    {
+        if( !isset( $address ) )
+            $address = $this->getAddress();
+        return $this->fetcher( 'eth_getTransactionCount', '"' . $address . '","latest"' );
+    }
+
+    public function getBlockByHash( $blockHash, $fullTransactions = false )
+    {
+        return $this->fetcher( 'eth_getBlockByHash', '"' . $blockHash . '",' . ( $fullTransactions ? 'true' : 'false' ) );
+    }
+
+    public function getBlockByNumber( $blockNumber = 'latest', $fullTransactions = false )
+    {
+        return $this->fetcher( 'eth_getBlockByNumber', '"' . $blockNumber . '",' . ( $fullTransactions ? 'true' : 'false' ) );
+    }
+
+    public function getBlockReceipts( $blockHash )
+    {
+        return $this->fetcher( 'eth_getBlockReceipts', '"' . $blockHash . '"' );
+    }
+
+    public function getBlockTransactionCountByHash( $blockHash )
+    {
+        return $this->fetcher( 'eth_getBlockTransactionCountByHash', '"' . $blockHash . '"' );
+    }
+
+    public function getBlockTransactionCountByNumber( $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getBlockTransactionCountByNumber', '"' . $blockNumber . '"' );
+    }
+
+    public function call( $tx, $strict = null, $block = 'latest' )
+    {
+        if( isset( $strict ) )
+            $tx['strict'] = $strict;
+        return $this->fetcher( 'eth_call', json_encode( $tx ) . ',"' . $block . '"' );
+    }
+
+    public function getEstimateGas( $tx )
+    {
+        return $this->fetcher( 'eth_estimateGas', json_encode( $tx ) );
+    }
+
+    public function sendRawTransaction( $rawTransaction )
+    {
+        return $this->fetcher( 'eth_sendRawTransaction', '"' . $rawTransaction . '"' );
+    }
+
+    public function getTransactionByHash( $hash )
+    {
+        return $this->fetcher( 'eth_getTransactionByHash', '"' . $hash . '"' );
     }
 
     public function getTransactionReceipt( $hash )
@@ -156,9 +287,14 @@ class UnitsKit
         return $receipt;
     }
 
-    public function getTransactionByHash( $hash )
+    public function getLogs( $options )
     {
-        return $this->fetcher( 'eth_getTransactionByHash', '"' . $hash . '"' );
+        return $this->fetcher( 'eth_getLogs', json_encode( $options ) );
+    }
+
+    public function height()
+    {
+        return $this->blockNumber();
     }
 
     public function txByHash( $hash )
@@ -175,148 +311,18 @@ class UnitsKit
         return $tx;
     }
 
-    public function getBridgeLogs( $blockHash, $address = '0x0000000000000000000000000000000000006a7e', $topics = [ '0xfeadaf04de8d7c2594453835b9a93b747e20e7a09a7fdb9280579a6dbaf131a8' ] )
+    public function getNonce()
     {
-        return $this->fetcher( 'eth_getLogs', json_encode(
-        [
-            'blockHash' => $blockHash,
-            'address' => $address,
-            'topics' => $topics,
-        ] ) );
+        return $this->getTransactionCount( $this->getAddress() );
     }
 
-    public function getBridgeTree( $blockHash, $txhash )
+    public function txEstimateGas( $tx )
     {
-        $logs = $this->getBridgeLogs( $blockHash );
-        if( $logs === false )
-            return [ false, false ];
-
-        $tree = [];
-        $indexFound = false;
-        foreach( $logs as $index => $log )
-        {
-            $tree[$index] = h2b( $log['data'] );
-            if( $log['transactionHash'] === $txhash )
-                $indexFound = $index;
-        }
-
-        return [ $tree, $indexFound ];
-    }
-
-    private static $merkleBridgeDefault;
-    private static $merkleBridgeKnown;
-
-    private function merkleBridgeInit()
-    {
-        if( isset( self::$merkleBridgeDefault ) )
-            return;
-
-        self::$merkleBridgeDefault = $this->blake2b256( chr( 0 ) );
-        $hash = self::$merkleBridgeDefault;
-        for( $i = 0; $i < 9; ++$i )
-        {
-            $value = $hash . $hash;
-            $hash = $this->blake2b256( $value );
-            self::$merkleBridgeKnown[$value] = $hash;
-        }
-    }
-
-    private function merkleBridgeProofs( $tree, $index, $size = 1024 )
-    {
-        $this->merkleBridgeInit();
-
-        $path = [];
-        $q = $size >> 1;
-        $p = $q;
-        for( ;; )
-        {
-            if( $index < $p )
-            {
-                $path[$q] = true;
-                $q >>= 1;
-                if( $q === 0 )
-                    break;
-                $p -= $q;
-            }
-            else
-            {
-                $path[$q] = false;
-                $q >>= 1;
-                if( $q === 0 )
-                    break;
-                $p += $q;
-            }
-        }
-
-        $proofs = [];
-        $p = 0;
-        foreach( $path as $q => $lr )
-        {
-            $proofs[] = $this->merkleBridgeHashAt( $tree, $p + ( $lr ? 1 : 0 ), $q );
-            if( $q !== 1 )
-            {
-                $p += $lr ? 0 : 1;
-                $p <<= 1;
-            }
-        }
-
-        return array_reverse( $proofs );
-    }
-
-    private function merkleBridgeHashAt( $tree, $p, $q )
-    {
-        if( $q === 1 )
-        {
-            if( !isset( $tree[$p] ) )
-                return self::$merkleBridgeDefault;
-
-            return $this->blake2b256( $tree[$p] );
-        }
-        else
-        {
-            $p <<= 1;
-            $q >>= 1;
-            $l = $this->merkleBridgeHashAt( $tree, $p + 0, $q );
-            $r = $this->merkleBridgeHashAt( $tree, $p + 1, $q );
-            $value = $l . $r;
-            if( isset( self::$merkleBridgeKnown[$value] ) )
-                return self::$merkleBridgeKnown[$value];
-            return $this->blake2b256( $value );
-        }
-    }
-
-    public function getBridgeProofs( $tx )
-    {
-        if( !isset( $tx['receipt'] ) || !isset( $tx['succeed'] ) || !$tx['succeed'] )
-        {
-            $this->log( 'e', 'txBridgeProofs() not succeed tx' );
-            return [ false, false ];
-        }
-
-        if( !isset( $tx['receipt']['logs'][0]['data'] ) )
-        {
-            $this->log( 'e', 'txBridgeProofs() not bridged tx' );
-            return [ false, false ];
-        }
-
-        list( $tree, $index ) = $this->getBridgeTree( $tx['receipt']['blockHash'], $tx['hash'] );
-        if( $tree === false )
-            return [ false, false ];
-
-        if( $index === false )
-        {
-            $this->log( 'e', 'txBridgeProofs() not found txhash' );
-            return [ false, false ];
-        }
-
-        $logData = h2b( $tx['receipt']['logs'][0]['data'] );
-        if( $tree[$index] !== $logData )
-        {
-            $this->log( 'e', 'txBridgeProofs() not found logData' );
-            return [ false, false ];
-        }
-
-        return [ $this->merkleBridgeProofs( $tree, $index, 1024 ), $index ];
+        $gas = $this->getEstimateGas( $tx );
+        if( $gas === false )
+            return false;
+        $tx['gas'] = $gas;
+        return $tx;
     }
 
     public function txBroadcast( $tx, $verbose = true )
@@ -459,47 +465,148 @@ class UnitsKit
         return $tx;
     }
 
-    public function getBalance( $address = null )
+    public function getBridgeLogs( $blockHash, $address = '0x0000000000000000000000000000000000006a7e', $topics = [ '0xfeadaf04de8d7c2594453835b9a93b747e20e7a09a7fdb9280579a6dbaf131a8' ] )
     {
-        if( !isset( $address ) )
-            $address = $this->getAddress();
-        return $this->fetcher( 'eth_getBalance', '"' . $address . '", "latest"' );
+        return $this->getLogs(
+        [
+            'blockHash' => $blockHash,
+            'address' => $address,
+            'topics' => $topics,
+        ] );
     }
 
-    public function getGasPrice()
+    public function getBridgeTree( $blockHash, $txhash )
     {
-        return $this->fetcher( 'eth_gasPrice' );
+        $logs = $this->getBridgeLogs( $blockHash );
+        if( $logs === false )
+            return [ false, false ];
+
+        $tree = [];
+        $indexFound = false;
+        foreach( $logs as $index => $log )
+        {
+            $tree[$index] = h2b( $log['data'] );
+            if( $log['transactionHash'] === $txhash )
+                $indexFound = $index;
+        }
+
+        return [ $tree, $indexFound ];
     }
 
-    public function getChainId()
+    private static $merkleBridgeDefault;
+    private static $merkleBridgeKnown;
+
+    private function merkleBridgeInit()
     {
-        return $this->fetcher( 'eth_chainId' );
+        if( isset( self::$merkleBridgeDefault ) )
+            return;
+
+        self::$merkleBridgeDefault = $this->blake2b256( chr( 0 ) );
+        $hash = self::$merkleBridgeDefault;
+        for( $i = 0; $i < 9; ++$i )
+        {
+            $value = $hash . $hash;
+            $hash = $this->blake2b256( $value );
+            self::$merkleBridgeKnown[$value] = $hash;
+        }
     }
 
-    public function getEstimateGas( $tx )
+    private function merkleBridgeProofs( $tree, $index, $size = 1024 )
     {
-        return $this->fetcher( 'eth_estimateGas', json_encode( $tx ) );
+        $this->merkleBridgeInit();
+
+        $path = [];
+        $q = $size >> 1;
+        $p = $q;
+        for( ;; )
+        {
+            if( $index < $p )
+            {
+                $path[$q] = true;
+                $q >>= 1;
+                if( $q === 0 )
+                    break;
+                $p -= $q;
+            }
+            else
+            {
+                $path[$q] = false;
+                $q >>= 1;
+                if( $q === 0 )
+                    break;
+                $p += $q;
+            }
+        }
+
+        $proofs = [];
+        $p = 0;
+        foreach( $path as $q => $lr )
+        {
+            $proofs[] = $this->merkleBridgeHashAt( $tree, $p + ( $lr ? 1 : 0 ), $q );
+            if( $q !== 1 )
+            {
+                $p += $lr ? 0 : 1;
+                $p <<= 1;
+            }
+        }
+
+        return array_reverse( $proofs );
     }
 
-    public function txEstimateGas( $tx )
+    private function merkleBridgeHashAt( $tree, $p, $q )
     {
-        $gas = $this->getEstimateGas( $tx );
-        if( $gas === false )
-            return false;
-        $tx['gas'] = $gas;
-        return $tx;
+        if( $q === 1 )
+        {
+            if( !isset( $tree[$p] ) )
+                return self::$merkleBridgeDefault;
+
+            return $this->blake2b256( $tree[$p] );
+        }
+        else
+        {
+            $p <<= 1;
+            $q >>= 1;
+            $l = $this->merkleBridgeHashAt( $tree, $p + 0, $q );
+            $r = $this->merkleBridgeHashAt( $tree, $p + 1, $q );
+            $value = $l . $r;
+            if( isset( self::$merkleBridgeKnown[$value] ) )
+                return self::$merkleBridgeKnown[$value];
+            return $this->blake2b256( $value );
+        }
     }
 
-    public function getTransactionCount( $address = null )
+    public function getBridgeProofs( $tx )
     {
-        if( !isset( $address ) )
-            $address = $this->getAddress();
-        return $this->fetcher( 'eth_getTransactionCount', '"' . $address . '","latest"' );
-    }
+        if( !isset( $tx['receipt'] ) || !isset( $tx['succeed'] ) || !$tx['succeed'] )
+        {
+            $this->log( 'e', 'txBridgeProofs() not succeed tx' );
+            return [ false, false ];
+        }
 
-    public function getNonce()
-    {
-        return $this->getTransactionCount( $this->getAddress() );
+        if( !isset( $tx['receipt']['logs'][0]['data'] ) )
+        {
+            $this->log( 'e', 'txBridgeProofs() not bridged tx' );
+            return [ false, false ];
+        }
+
+        list( $tree, $index ) = $this->getBridgeTree( $tx['receipt']['blockHash'], $tx['hash'] );
+        if( $tree === false )
+            return [ false, false ];
+
+        if( $index === false )
+        {
+            $this->log( 'e', 'txBridgeProofs() not found txhash' );
+            return [ false, false ];
+        }
+
+        $logData = h2b( $tx['receipt']['logs'][0]['data'] );
+        if( $tree[$index] !== $logData )
+        {
+            $this->log( 'e', 'txBridgeProofs() not found logData' );
+            return [ false, false ];
+        }
+
+        return [ $this->merkleBridgeProofs( $tree, $index, 1024 ), $index ];
     }
 
     public function setPrivateKey( $key )
@@ -581,8 +688,11 @@ class UnitsKit
     {
         if( $len < 56 )
             return chr( $len + $offset );
-        $binLen = hex2bin( dechex( $len ) );
-        return chr( strlen( $binLen ) + $offset + 55 ) . $binLen;
+        if( $len < 256 )
+            return chr( $offset + 56 ) . chr( $len );
+        if( $len < 65536 )
+            return chr( $offset + 57 ) . chr( ( $len >> 8 ) & 0xFF ) . chr( $len & 0xFF );
+        return chr( $offset + 58 ) . chr( ( $len >> 16 ) & 0xFF ) . chr( ( $len >> 8 ) & 0xFF ) . chr( $len & 0xFF );
     }
 
     public function tx( $to, $value, $gasPrice, $nonce, $input = '' )
@@ -596,6 +706,77 @@ class UnitsKit
             'value' => $value,
             'input' => $input,
         ];
+    }
+
+    private function h2bAccessList( $accessList )
+    {
+        $list = [];
+        foreach( $accessList as $record )
+        {
+            $address = $record['address'];
+            $keys = $record['storageKeys'];
+            $h2bKeys = [];
+            foreach( $keys as $key )
+                $h2bKeys[] = h2b( $key );
+            $list[] = [ h2b( $address ), $h2bKeys ];
+        }
+        return $list;
+    }
+
+    public function txRLP( $tx )
+    {
+        switch( $tx['type'] )
+        {
+            case '0x0':
+                $list =
+                [
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['gasPrice'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x' . bin2hex( $this->encodeRLP( $list ) );
+            case '0x1':
+                $list =
+                [
+                    h2b( $tx['chainId'] ),
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['gasPrice'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    $this->h2bAccessList( $tx['accessList'] ),
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x01' . bin2hex( $this->encodeRLP( $list ) );
+            case '0x2':
+                $list =
+                [
+                    h2b( $tx['chainId'] ),
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['maxPriorityFeePerGas'] ),
+                    h2b( $tx['maxFeePerGas'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    $this->h2bAccessList( $tx['accessList'] ),
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x02' . bin2hex( $this->encodeRLP( $list ) );
+            default:
+                return false;
+        }
     }
 
     private function txInput( $tx, $full )
