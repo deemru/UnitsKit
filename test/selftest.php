@@ -141,7 +141,7 @@ if( $privateKey !== false )
         $value = $uk->hexValue( 1.1 );
         for( $i = 0; $i < 8; ++$i ) // Known transaction? => increment `nonce`
         {
-            $tx = $uk->tx( $uk->getAddress(), $value, $gasPrice, dechex( hexdec( $nonce ) + $i ) );
+            $tx = $uk->tx( $uk->getAddress(), $value, $gasPrice, '0x' . dechex( hexdec( $nonce ) + $i ) );
             $tx = $uk->txEstimateGas( $tx );
             $tx = $uk->txSign( $tx );
             $tx = $uk->txBroadcast( $tx );

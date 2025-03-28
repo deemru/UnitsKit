@@ -126,7 +126,7 @@ class UnitsKit
         unset( $this->addressHex );
     }
 
-    private function fetcher( $method, $params = '', $verbose = true )
+    public function fetcher( $method, $params = '', $verbose = true )
     {
         $json = $this->rpc->fetch( '/', true, '{"jsonrpc":"2.0","method":"' . $method . '","params":[' . $params . '],"id":1}' );
         if( $json === false || false === ( $json = jd( $json ) ) || isset( $json['error'] ) )
@@ -143,9 +143,40 @@ class UnitsKit
         return $json['result'];
     }
 
-    public function height()
+    public function call( $tx, $strict = null, $block = 'latest' )
+    {
+        if( isset( $strict ) )
+            $tx['strict'] = $strict;
+        return $this->fetcher( 'eth_call', json_encode( $tx ) . ',"' . $block . '"' );
+    }
+/*
+eth_sendRawTransaction
+eth_chainId
+eth_estimateGas
+eth_gasPrice
+eth_getBalance
+eth_getBlockByHash
+eth_getBlockByNumber
+eth_getBlockReceipts
+eth_getBlockTransactionCountByHash
+eth_getBlockTransactionCountByNumber
+eth_getCode
+eth_getLogs
+eth_getStorageAt
+eth_getTransactionCount
+eth_maxPriorityFeePerGas
+eth_protocolVersion
+eth_syncing
+*/
+
+    public function blockNumber()
     {
         return hexdec( $this->fetcher( 'eth_blockNumber' ) );
+    }
+
+    public function height()
+    {
+        return $this->blockNumber();
     }
 
     public function getTransactionReceipt( $hash )
