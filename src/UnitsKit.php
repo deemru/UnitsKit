@@ -649,8 +649,7 @@ eth_syncing
 
     public function txRLP( $tx )
     {
-        $type = $tx['type'] ?? '0x0';
-        switch( $type )
+        switch( $tx['type'] )
         {
             case '0x0':
                 $list =
