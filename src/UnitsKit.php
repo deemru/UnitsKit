@@ -14,7 +14,7 @@ function h2b( $hex )
 {
     if( substr( $hex, 0, 2 ) === '0x' )
         $hex = substr( $hex, 2 );
-    if( $hex === '' )
+    if( $hex === '' || $hex === '0' )
         return '';
     if( strlen( $hex ) % 2 !== 0 )
         $hex = '0' . $hex;
@@ -612,8 +612,11 @@ eth_syncing
     {
         if( $len < 56 )
             return chr( $len + $offset );
-        $binLen = hex2bin( dechex( $len ) );
-        return chr( strlen( $binLen ) + $offset + 55 ) . $binLen;
+        if( $len < 256 )
+            return chr( $offset + 56 ) . chr( $len );
+        if( $len < 65536 )
+            return chr( $offset + 57 ) . chr( ( $len >> 8 ) & 0xFF ) . chr( $len & 0xFF );
+        return chr( $offset + 58 ) . chr( ( $len >> 16 ) & 0xFF ) . chr( ( $len >> 8 ) & 0xFF ) . chr( $len & 0xFF );
     }
 
     public function tx( $to, $value, $gasPrice, $nonce, $input = '' )
@@ -627,6 +630,63 @@ eth_syncing
             'value' => $value,
             'input' => $input,
         ];
+    }
+
+    public function txRLP( $tx )
+    {
+        $type = $tx['type'] ?? '0x0';
+        switch( $type )
+        {
+            case '0x0':
+                $list =
+                [
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['gasPrice'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x' . bin2hex( $this->encodeRLP( $list ) );
+            case '0x1':
+                $list =
+                [
+                    h2b( $tx['chainId'] ),
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['gasPrice'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    [],
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x01' . bin2hex( $this->encodeRLP( $list ) );
+            case '0x2':
+                $list =
+                [
+                    h2b( $tx['chainId'] ),
+                    h2b( $tx['nonce'] ),
+                    h2b( $tx['maxPriorityFeePerGas'] ),
+                    h2b( $tx['maxFeePerGas'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['input'] ),
+                    [],
+                    h2b( $tx['v'] ),
+                    h2b( $tx['r'] ),
+                    h2b( $tx['s'] ),
+                ];
+                return '0x02' . bin2hex( $this->encodeRLP( $list ) );
+            default:
+                return false;
+        }
     }
 
     private function txInput( $tx, $full )
