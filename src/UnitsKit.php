@@ -632,6 +632,21 @@ eth_syncing
         ];
     }
 
+    private function h2bAccessList( $accessList )
+    {
+        $list = [];
+        foreach( $accessList as $record )
+        {
+            $address = $record['address'];
+            $keys = $record['storageKeys'];
+            $h2bKeys = [];
+            foreach( $keys as $key )
+                $h2bKeys[] = h2b( $key );
+            $list[] = [ h2b( $address ), $h2bKeys ];
+        }
+        return $list;
+    }
+
     public function txRLP( $tx )
     {
         $type = $tx['type'] ?? '0x0';
@@ -661,7 +676,7 @@ eth_syncing
                     h2b( $tx['to'] ),
                     h2b( $tx['value'] ),
                     h2b( $tx['input'] ),
-                    [],
+                    $this->h2bAccessList( $tx['accessList'] ),
                     h2b( $tx['v'] ),
                     h2b( $tx['r'] ),
                     h2b( $tx['s'] ),
@@ -678,7 +693,7 @@ eth_syncing
                     h2b( $tx['to'] ),
                     h2b( $tx['value'] ),
                     h2b( $tx['input'] ),
-                    [],
+                    $this->h2bAccessList( $tx['accessList'] ),
                     h2b( $tx['v'] ),
                     h2b( $tx['r'] ),
                     h2b( $tx['s'] ),
