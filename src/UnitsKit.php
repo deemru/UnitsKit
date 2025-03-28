@@ -467,12 +467,12 @@ class UnitsKit
 
     public function getBridgeLogs( $blockHash, $address = '0x0000000000000000000000000000000000006a7e', $topics = [ '0xfeadaf04de8d7c2594453835b9a93b747e20e7a09a7fdb9280579a6dbaf131a8' ] )
     {
-        return $this->fetcher( 'eth_getLogs', json_encode(
+        return $this->getLogs(
         [
             'blockHash' => $blockHash,
             'address' => $address,
             'topics' => $topics,
-        ] ) );
+        ] );
     }
 
     public function getBridgeTree( $blockHash, $txhash )
@@ -607,44 +607,6 @@ class UnitsKit
         }
 
         return [ $this->merkleBridgeProofs( $tree, $index, 1024 ), $index ];
-    }
-
-    public function getBalance( $address = null )
-    {
-        if( !isset( $address ) )
-            $address = $this->getAddress();
-        return $this->fetcher( 'eth_getBalance', '"' . $address . '", "latest"' );
-    }
-
-    public function getGasPrice()
-    {
-        return $this->fetcher( 'eth_gasPrice' );
-    }
-
-    public function getEstimateGas( $tx )
-    {
-        return $this->fetcher( 'eth_estimateGas', json_encode( $tx ) );
-    }
-
-    public function txEstimateGas( $tx )
-    {
-        $gas = $this->getEstimateGas( $tx );
-        if( $gas === false )
-            return false;
-        $tx['gas'] = $gas;
-        return $tx;
-    }
-
-    public function getTransactionCount( $address = null )
-    {
-        if( !isset( $address ) )
-            $address = $this->getAddress();
-        return $this->fetcher( 'eth_getTransactionCount', '"' . $address . '","latest"' );
-    }
-
-    public function getNonce()
-    {
-        return $this->getTransactionCount( $this->getAddress() );
     }
 
     public function setPrivateKey( $key )
