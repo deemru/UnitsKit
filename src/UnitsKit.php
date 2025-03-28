@@ -143,40 +143,140 @@ class UnitsKit
         return $json['result'];
     }
 
-    public function call( $tx, $strict = null, $block = 'latest' )
-    {
-        if( isset( $strict ) )
-            $tx['strict'] = $strict;
-        return $this->fetcher( 'eth_call', json_encode( $tx ) . ',"' . $block . '"' );
-    }
-/*
-eth_sendRawTransaction
-eth_chainId
-eth_estimateGas
-eth_gasPrice
-eth_getBalance
-eth_getBlockByHash
-eth_getBlockByNumber
-eth_getBlockReceipts
-eth_getBlockTransactionCountByHash
-eth_getBlockTransactionCountByNumber
-eth_getCode
-eth_getLogs
-eth_getStorageAt
-eth_getTransactionCount
-eth_maxPriorityFeePerGas
-eth_protocolVersion
-eth_syncing
-*/
+    /**
+     * Ethereum JSON-RPC API methods implemented in this class:
+     *
+     * Chain State:
+     * - eth_blockNumber      => blockNumber()
+     * - eth_chainId          => getChainId()
+     * - eth_gasPrice         => getGasPrice()
+     * - eth_maxPriorityFeePerGas => maxPriorityFeePerGas()
+     * - eth_protocolVersion  => protocolVersion()
+     * - eth_syncing          => syncing()
+     *
+     * Account Information:
+     * - eth_getBalance       => getBalance()
+     * - eth_getCode          => getCode()
+     * - eth_getStorageAt     => getStorageAt()
+     * - eth_getTransactionCount => getTransactionCount()
+     *
+     * Block Information:
+     * - eth_getBlockByHash   => getBlockByHash()
+     * - eth_getBlockByNumber => getBlockByNumber()
+     * - eth_getBlockReceipts => getBlockReceipts()
+     * - eth_getBlockTransactionCountByHash => getBlockTransactionCountByHash()
+     * - eth_getBlockTransactionCountByNumber => getBlockTransactionCountByNumber()
+     *
+     * Transaction Operations:
+     * - eth_call             => call()
+     * - eth_estimateGas      => getEstimateGas()
+     * - eth_sendRawTransaction => sendRawTransaction
+     *
+     * Transaction Information:
+     * - eth_getTransactionByHash => getTransactionByHash()
+     * - eth_getTransactionReceipt => getTransactionReceipt()
+     * - eth_getLogs          => getLogs
+     */
 
     public function blockNumber()
     {
         return hexdec( $this->fetcher( 'eth_blockNumber' ) );
     }
 
-    public function height()
+    public function getChainId()
     {
-        return $this->blockNumber();
+        return $this->fetcher( 'eth_chainId' );
+    }
+
+    public function getGasPrice()
+    {
+        return $this->fetcher( 'eth_gasPrice' );
+    }
+
+    public function maxPriorityFeePerGas()
+    {
+        return $this->fetcher( 'eth_maxPriorityFeePerGas' );
+    }
+
+    public function protocolVersion()
+    {
+        return $this->fetcher( 'eth_protocolVersion' );
+    }
+
+    public function syncing()
+    {
+        return $this->fetcher( 'eth_syncing' );
+    }
+
+    public function getBalance( $address = null )
+    {
+        if( !isset( $address ) )
+            $address = $this->getAddress();
+        return $this->fetcher( 'eth_getBalance', '"' . $address . '", "latest"' );
+    }
+
+    public function getCode( $address, $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getCode', '"' . $address . '","' . $blockNumber . '"' );
+    }
+
+    public function getStorageAt( $address, $position, $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getStorageAt', '"' . $address . '","' . $position . '","' . $blockNumber . '"' );
+    }
+
+    public function getTransactionCount( $address = null )
+    {
+        if( !isset( $address ) )
+            $address = $this->getAddress();
+        return $this->fetcher( 'eth_getTransactionCount', '"' . $address . '","latest"' );
+    }
+
+    public function getBlockByHash( $blockHash, $fullTransactions = false )
+    {
+        return $this->fetcher( 'eth_getBlockByHash', '"' . $blockHash . '",' . ( $fullTransactions ? 'true' : 'false' ) );
+    }
+
+    public function getBlockByNumber( $blockNumber = 'latest', $fullTransactions = false )
+    {
+        return $this->fetcher( 'eth_getBlockByNumber', '"' . $blockNumber . '",' . ( $fullTransactions ? 'true' : 'false' ) );
+    }
+
+    public function getBlockReceipts( $blockHash )
+    {
+        return $this->fetcher( 'eth_getBlockReceipts', '"' . $blockHash . '"' );
+    }
+
+    public function getBlockTransactionCountByHash( $blockHash )
+    {
+        return $this->fetcher( 'eth_getBlockTransactionCountByHash', '"' . $blockHash . '"' );
+    }
+
+    public function getBlockTransactionCountByNumber( $blockNumber = 'latest' )
+    {
+        return $this->fetcher( 'eth_getBlockTransactionCountByNumber', '"' . $blockNumber . '"' );
+    }
+
+    public function call( $tx, $strict = null, $block = 'latest' )
+    {
+        if( isset( $strict ) )
+            $tx['strict'] = $strict;
+        return $this->fetcher( 'eth_call', json_encode( $tx ) . ',"' . $block . '"' );
+    }
+
+    public function getEstimateGas( $tx )
+    {
+        return $this->fetcher( 'eth_estimateGas', json_encode( $tx ) );
+    }
+
+    public function sendRawTransaction( $rawTransaction )
+    {
+        return $this->fetcher( 'eth_sendRawTransaction', '"' . $rawTransaction . '"' );
+    }
+
+    public function getTransactionByHash( $hash )
+    {
+        return $this->fetcher( 'eth_getTransactionByHash', '"' . $hash . '"' );
     }
 
     public function getTransactionReceipt( $hash )
@@ -187,9 +287,14 @@ eth_syncing
         return $receipt;
     }
 
-    public function getTransactionByHash( $hash )
+    public function getLogs( $options )
     {
-        return $this->fetcher( 'eth_getTransactionByHash', '"' . $hash . '"' );
+        return $this->fetcher( 'eth_getLogs', json_encode( $options ) );
+    }
+
+    public function height()
+    {
+        return $this->blockNumber();
     }
 
     public function txByHash( $hash )
@@ -203,6 +308,160 @@ eth_syncing
             $tx['receipt'] = $receipt;
             $tx['succeed'] = isset( $receipt['status'] ) && $receipt['status'] === '0x1';
         }
+        return $tx;
+    }
+
+    public function getNonce()
+    {
+        return $this->getTransactionCount( $this->getAddress() );
+    }
+
+    public function txEstimateGas( $tx )
+    {
+        $gas = $this->getEstimateGas( $tx );
+        if( $gas === false )
+            return false;
+        $tx['gas'] = $gas;
+        return $tx;
+    }
+
+    public function txBroadcast( $tx, $verbose = true )
+    {
+        if( !isset( $tx['signed'] ) || !isset( $tx['hash'] ) )
+        {
+            $this->log( 'e', 'txBroadcast() not signed tx' );
+            return false;
+        }
+
+        $result = $this->fetcher( 'eth_sendRawTransaction', '"' . $tx['signed'] . '"', $verbose );
+        if( $result === false )
+            return false;
+
+        if( $result !== $tx['hash'] )
+        {
+            $this->log( 'e', 'txBroadcast() result (' . $result . ') differs from tx hash (' . $tx['hash'] . ')' );
+            return false;
+        }
+
+        $tx['broadcasted'] = true;
+        return $tx;
+    }
+
+    /**
+     * Ensures a transaction confirmed and reached required confirmations
+     *
+     * @param  array     $tx             Transaction as an array
+     * @param  int       $confirmations  Number of confirmations to reach (default: 0)
+     * @param  int|float $sleep          Seconds to sleep between requests (default: 1.0)
+     * @param  int       $timeout        Timeout to reach lost status (default: 30)
+     * @param  bool      $hard           Use hard timeout (default: false)
+     *
+     * @return array|false Ensured transaction as an array or FALSE on failure
+     */
+    public function ensure( $tx, $confirmations = 0, $sleep = 1.0, $timeout = 30, $hard = false )
+    {
+        if( !isset( $tx['broadcasted'] ) || !$tx['broadcasted'] )
+        {
+            $this->log( 'e', 'ensure() not broadcasted tx' );
+            return false;
+        }
+
+        $id = $tx['hash'];
+        $n = 0;
+        $n_utx = 0;
+        $usleep = (int)( $sleep * 1000000 );
+        $tsleep = 0;
+
+        while( false === ( $receipt = $this->getTransactionReceipt( $id ) ) )
+        {
+            if( $usleep === 0 )
+                return false;
+
+            if( $hard && $n > $timeout )
+            {
+                $this->log( 'w', "($id) hard timeout reached ($n)" );
+                return false;
+            }
+
+            usleep( $usleep );
+            $tsleep += $usleep;
+            if( (int)( ( 1 + $tsleep ) / 1000000 ) === $n )
+                continue;
+
+            ++$n;
+            $n_diff = $n - $n_utx;
+            if( $n_utx )
+            {
+                $n_diff = $n - $n_utx;
+                if( $n_diff > $timeout )
+                {
+                    if( false === $this->txBroadcast( $tx, false ) &&
+                        false === strpos( $this->lastError, 'Known' ) )
+                    {
+                        $this->log( 'e', "($id) rebroadcast failed (timeout reached)" );
+                        return false;
+                    }
+
+                    $this->log( 'w', "($id) rebroadcasted ($n)" );
+                    $n_utx = 0;
+                    continue;
+                }
+
+                if( $n_diff >= 1 )
+                    $this->log( 'i', "($id) still unconfirmed ($n) (timeout $n_diff/$timeout)" );
+            }
+            else
+            {
+                if( $n_diff > $timeout )
+                {
+                    if( false === $this->txBroadcast( $tx, false ) &&
+                        false === strpos( $this->lastError, 'Known' ) )
+                    {
+                        $n_utx = $n;
+                        continue;
+                    }
+                }
+
+                $this->log( 'i', "($id) unconfirmed ($n)" );
+            }
+        }
+
+        $succeed = isset( $receipt['status'] ) && $receipt['status'] === '0x1';
+        if( $usleep !== 0 )
+        {
+            if( $succeed )
+                $this->log( 's', "($id) confirmed" . ( $n > 0 ? " ($n)" : '' ) );
+            else
+                $this->log( 'e', "($id) failed" . ( $n > 0 ? " ($n)" : '' ) );
+        }
+
+        if( $succeed && $confirmations > 0 )
+        {
+            $n = 0;
+            $txHeight = hexdec( $receipt['blockNumber'] );
+            while( $confirmations > ( $c = $this->height() - $txHeight ) )
+            {
+                if( $usleep === 0 )
+                    return false;
+
+                $n++;
+                $this->log( 'i', "($id) $c/$confirmations confirmations ($n)" );
+                sleep( $sleep > 1 ? (int)$sleep : $confirmations );
+            }
+
+            if( $receipt !== $this->getTransactionReceipt( $id ) )
+            {
+                $this->log( 'w', "($id) change detected" );
+                $this->rpc->resetCache();
+                return $this->ensure( $tx, $confirmations, $sleep, $timeout, $hard );
+            }
+
+            $this->log( 's', "($id) reached $c confirmations" );
+            $tx['confirmations'] = $c;
+        }
+
+        $tx['receipt'] = $receipt;
+        $tx['succeed'] = $succeed;
         return $tx;
     }
 
@@ -350,146 +609,6 @@ eth_syncing
         return [ $this->merkleBridgeProofs( $tree, $index, 1024 ), $index ];
     }
 
-    public function txBroadcast( $tx, $verbose = true )
-    {
-        if( !isset( $tx['signed'] ) || !isset( $tx['hash'] ) )
-        {
-            $this->log( 'e', 'txBroadcast() not signed tx' );
-            return false;
-        }
-
-        $result = $this->fetcher( 'eth_sendRawTransaction', '"' . $tx['signed'] . '"', $verbose );
-        if( $result === false )
-            return false;
-
-        if( $result !== $tx['hash'] )
-        {
-            $this->log( 'e', 'txBroadcast() result (' . $result . ') differs from tx hash (' . $tx['hash'] . ')' );
-            return false;
-        }
-
-        $tx['broadcasted'] = true;
-        return $tx;
-    }
-
-    /**
-     * Ensures a transaction confirmed and reached required confirmations
-     *
-     * @param  array     $tx             Transaction as an array
-     * @param  int       $confirmations  Number of confirmations to reach (default: 0)
-     * @param  int|float $sleep          Seconds to sleep between requests (default: 1.0)
-     * @param  int       $timeout        Timeout to reach lost status (default: 30)
-     * @param  bool      $hard           Use hard timeout (default: false)
-     *
-     * @return array|false Ensured transaction as an array or FALSE on failure
-     */
-    public function ensure( $tx, $confirmations = 0, $sleep = 1.0, $timeout = 30, $hard = false )
-    {
-        if( !isset( $tx['broadcasted'] ) || !$tx['broadcasted'] )
-        {
-            $this->log( 'e', 'ensure() not broadcasted tx' );
-            return false;
-        }
-
-        $id = $tx['hash'];
-        $n = 0;
-        $n_utx = 0;
-        $usleep = (int)( $sleep * 1000000 );
-        $tsleep = 0;
-
-        while( false === ( $receipt = $this->getTransactionReceipt( $id ) ) )
-        {
-            if( $usleep === 0 )
-                return false;
-
-            if( $hard && $n > $timeout )
-            {
-                $this->log( 'w', "($id) hard timeout reached ($n)" );
-                return false;
-            }
-
-            usleep( $usleep );
-            $tsleep += $usleep;
-            if( (int)( ( 1 + $tsleep ) / 1000000 ) === $n )
-                continue;
-
-            ++$n;
-            $n_diff = $n - $n_utx;
-            if( $n_utx )
-            {
-                $n_diff = $n - $n_utx;
-                if( $n_diff > $timeout )
-                {
-                    if( false === $this->txBroadcast( $tx, false ) &&
-                        false === strpos( $this->lastError, 'Known' ) )
-                    {
-                        $this->log( 'e', "($id) rebroadcast failed (timeout reached)" );
-                        return false;
-                    }
-
-                    $this->log( 'w', "($id) rebroadcasted ($n)" );
-                    $n_utx = 0;
-                    continue;
-                }
-
-                if( $n_diff >= 1 )
-                    $this->log( 'i', "($id) still unconfirmed ($n) (timeout $n_diff/$timeout)" );
-            }
-            else
-            {
-                if( $n_diff > $timeout )
-                {
-                    if( false === $this->txBroadcast( $tx, false ) &&
-                        false === strpos( $this->lastError, 'Known' ) )
-                    {
-                        $n_utx = $n;
-                        continue;
-                    }
-                }
-
-                $this->log( 'i', "($id) unconfirmed ($n)" );
-            }
-        }
-
-        $succeed = isset( $receipt['status'] ) && $receipt['status'] === '0x1';
-        if( $usleep !== 0 )
-        {
-            if( $succeed )
-                $this->log( 's', "($id) confirmed" . ( $n > 0 ? " ($n)" : '' ) );
-            else
-                $this->log( 'e', "($id) failed" . ( $n > 0 ? " ($n)" : '' ) );
-        }
-
-        if( $succeed && $confirmations > 0 )
-        {
-            $n = 0;
-            $txHeight = hexdec( $receipt['blockNumber'] );
-            while( $confirmations > ( $c = $this->height() - $txHeight ) )
-            {
-                if( $usleep === 0 )
-                    return false;
-
-                $n++;
-                $this->log( 'i', "($id) $c/$confirmations confirmations ($n)" );
-                sleep( $sleep > 1 ? (int)$sleep : $confirmations );
-            }
-
-            if( $receipt !== $this->getTransactionReceipt( $id ) )
-            {
-                $this->log( 'w', "($id) change detected" );
-                $this->rpc->resetCache();
-                return $this->ensure( $tx, $confirmations, $sleep, $timeout, $hard );
-            }
-
-            $this->log( 's', "($id) reached $c confirmations" );
-            $tx['confirmations'] = $c;
-        }
-
-        $tx['receipt'] = $receipt;
-        $tx['succeed'] = $succeed;
-        return $tx;
-    }
-
     public function getBalance( $address = null )
     {
         if( !isset( $address ) )
@@ -500,11 +619,6 @@ eth_syncing
     public function getGasPrice()
     {
         return $this->fetcher( 'eth_gasPrice' );
-    }
-
-    public function getChainId()
-    {
-        return $this->fetcher( 'eth_chainId' );
     }
 
     public function getEstimateGas( $tx )
