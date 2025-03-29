@@ -12,6 +12,8 @@ function jd( $data )
 
 function h2b( $hex )
 {
+    if( $hex === null )
+        return '';
     if( substr( $hex, 0, 2 ) === '0x' )
         $hex = substr( $hex, 2 );
     if( $hex === '' || $hex === '0' )
