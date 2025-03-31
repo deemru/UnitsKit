@@ -776,6 +776,19 @@ class UnitsKit
                     h2b( $tx['s'] ),
                 ];
                 return '0x02' . bin2hex( $this->encodeRLP( $list ) );
+            case '0x7e':
+                $list =
+                [
+                    h2b( $tx['sourceHash'] ),
+                    h2b( $tx['from'] ),
+                    h2b( $tx['to'] ),
+                    h2b( $tx['mint'] ),
+                    h2b( $tx['value'] ),
+                    h2b( $tx['gas'] ),
+                    h2b( $tx['isSystemTx'] ? '0x1' : '0x0' ),
+                    h2b( $tx['input'] ),
+                ];
+                return '0x7e' . bin2hex( $this->encodeRLP( $list ) );
             default:
                 return false;
         }
