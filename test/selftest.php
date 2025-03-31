@@ -153,7 +153,7 @@ if( $privateKey !== false )
             break;
         }
 
-        $t->test( isset( $tx['succeed'] ) && $tx['succeed'] );
+        $t->test( isset( $tx['succeed'] ) && $tx['succeed'] && $uk->getPublicKey() === $uk->txRecoverPublicKey( $tx ) );
     }
 }
 

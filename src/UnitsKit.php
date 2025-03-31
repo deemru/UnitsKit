@@ -868,4 +868,19 @@ class UnitsKit
         $tx['signed'] = b2h( $encoded );
         return $tx;
     }
+
+    public function txRecoverPublicKey( $tx )
+    {
+        $rlp = $tx;
+        $chainId = (int)( ( hexdec( $rlp['v'] ) - 35 ) / 2 );
+        $recoveryParam = hexdec( $rlp['v'] ) - 35 - $chainId * 2;
+        $rlp['v'] = dechex( $chainId );
+        $rlp['r'] = '';
+        $rlp['s'] = '';
+        $rlp['type'] = empty( $rlp['type'] ) ? '0x0' : $rlp['type'];
+        $rlp = h2b( $this->txRLP( $rlp ) );
+        $hash = $this->keccak256( $rlp );
+        $pub = ( new EC( 'secp256k1' ) )->recoverPubKey( bin2hex( $hash ), $tx, $recoveryParam );
+        return '0x' . str_pad( $pub->x->toString( 'hex' ), 64, '0' ) . str_pad( $pub->y->toString( 'hex' ), 64, '0' );
+    }
 }
